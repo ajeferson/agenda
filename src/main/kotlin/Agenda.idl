@@ -1,0 +1,20 @@
+module br {
+
+    module com {
+
+        module ajeferson {
+
+            module corba {
+
+                interface Agenda {
+                    boolean isAlive();
+                    boolean insert(in string name, in string phoneNumber);
+                };
+
+            };
+
+        };
+
+    };
+
+};
