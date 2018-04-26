@@ -37,4 +37,8 @@ class AgendaImpl(val id: String): AgendaPOA() {
 
     }
 
+    companion object {
+        const val NUMBER_OF_AGENDAS = 3
+    }
+
 }

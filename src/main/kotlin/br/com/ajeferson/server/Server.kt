@@ -2,6 +2,7 @@ package br.com.ajeferson.server
 
 import br.com.ajeferson.client.AgendaImpl
 import br.com.ajeferson.corba.AgendaHelper
+import br.com.ajeferson.corba.IdentityManagerHelper
 import br.com.ajeferson.corba.IdentityManagerPOA
 import br.com.ajeferson.entity.Contact
 import br.com.ajeferson.enumeration.AgendaKind
@@ -24,6 +25,8 @@ class Server(args: Array<String>): IdentityManagerPOA() {
     private lateinit var namingContext: NamingContext
 
     private val disposables = CompositeDisposable()
+
+    private val contacts = mutableListOf<Contact>()
 
     init {
 
@@ -58,6 +61,8 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
             observe()
 
+            connect()
+
             orb.run()
 
         } catch (e: Exception) {
@@ -87,6 +92,35 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
     }
 
+    private fun connect() {
+
+        var id = 0
+
+        while (id < AgendaImpl.NUMBER_OF_AGENDAS) {
+
+            id++
+
+            if("agenda$id" == agenda.id) {
+                continue
+            }
+
+            try {
+
+                // Get the AgendaServer
+                val name = arrayOf(NameComponent("agenda$id", IDENTITY_MANAGER_KIND))
+                val objRef = namingContext.resolve(name)
+                val identityManager = IdentityManagerHelper.narrow(objRef)
+
+                // This triggers the sending of contacts by other agenda
+                identityManager.identify(agenda.id)
+
+            } catch (e: Exception) {
+
+            }
+
+        }
+
+    }
 
 
     /**
@@ -101,7 +135,18 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
         val name = arrayOf(NameComponent(identity, AgendaKind.AGENDA.description))
         val ref = namingContext.resolve(name)
-        clients.add(AgendaHelper.narrow(ref))
+
+        val client = AgendaHelper.narrow(ref)
+        clients.add(client)
+
+        // Send all my data to this new client
+        contacts.forEach { contact ->
+            try {
+                client.insert(contact.name, contact.phoneNumber)
+            } catch (e: Exception) {
+
+            }
+        }
 
     }
 
@@ -112,8 +157,9 @@ class Server(args: Array<String>): IdentityManagerPOA() {
      * */
 
     private fun didReceiveContact(contact: Contact) {
-        // Broadcast to all clients
-        // TODO Broadcast to agendas
+
+        contacts.add(contact)
+
         clients.forEach { agenda ->
             try {
                 agenda.insert(contact.name, contact.phoneNumber)
@@ -121,9 +167,13 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
             }
         }
+
     }
 
     private fun didRemoveContact(name: String) {
+
+        contacts.removeIf { it.name == name }
+
         clients.forEach { agenda ->
             try {
                 agenda.remove(name)
@@ -131,6 +181,7 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
             }
         }
+
     }
 
     companion object {
