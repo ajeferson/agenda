@@ -95,6 +95,7 @@ class Server(args: Array<String>): IdentityManagerPOA() {
     private fun connect() {
 
         var id = 0
+        var sync = true
 
         while (id < AgendaImpl.NUMBER_OF_AGENDAS) {
 
@@ -112,7 +113,8 @@ class Server(args: Array<String>): IdentityManagerPOA() {
                 val identityManager = IdentityManagerHelper.narrow(objRef)
 
                 // This triggers the sending of contacts by other agenda
-                identityManager.identify(agenda.id)
+                identityManager.identify(agenda.id, sync)
+                sync = false
 
             } catch (e: Exception) {
 
@@ -127,7 +129,7 @@ class Server(args: Array<String>): IdentityManagerPOA() {
      * IdentityManager Implement
      * */
 
-    override fun identify(identity: String?) {
+    override fun identify(identity: String?, sync: Boolean) {
 
         if(identity == null) {
             return
@@ -138,6 +140,8 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
         val client = AgendaHelper.narrow(ref)
         clients.add(client)
+
+        if(!sync) { return }
 
         // Send all my data to this new client
         contacts.forEach { contact ->

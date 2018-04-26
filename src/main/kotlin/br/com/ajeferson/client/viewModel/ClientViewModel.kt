@@ -44,6 +44,7 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
     val statusStream: PublishSubject<Status> = PublishSubject.create()
     val agendaStream: PublishSubject<String> = PublishSubject.create()
     val reloadStream: PublishSubject<Boolean> = PublishSubject.create()
+    val duplicateStream: PublishSubject<Boolean> = PublishSubject.create()
 
     private val disposables = CompositeDisposable()
 
@@ -52,7 +53,11 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
 
         contactsStream
                 .subscribe {
-                    agendaServer?.insert(it.name, it.phoneNumber)
+                    if(contacts.firstOrNull { elem -> elem.name == it.name } != null) {
+                        duplicateStream.onNext(true)
+                    } else {
+                        agendaServer?.insert(it.name, it.phoneNumber)
+                    }
                 }
                 .disposedBy(disposables)
 
@@ -135,7 +140,7 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
                 val cName = arrayOf(NameComponent(agendaId(id), Server.IDENTITY_MANAGER_KIND))
                 val cRef = namingContext.resolve(cName)
                 identityManager = IdentityManagerHelper.narrow(cRef)
-                identityManager?.identify("client0") // TODO Refactor
+                identityManager?.identify("client0", true) // TODO Refactor
 
             } catch (e: Exception) {
                 agendaServer = null

@@ -13,7 +13,7 @@ module br {
                 };
 
                 interface IdentityManager {
-                    void identify(in string identity);
+                    void identify(in string identity, in boolean sync);
                 };
 
             };

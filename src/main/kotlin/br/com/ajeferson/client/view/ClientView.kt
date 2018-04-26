@@ -71,6 +71,12 @@ class ClientView: JFrame("Client") {
                     tableModel.reloadData()
                 }
 
+        viewModel
+                .duplicateStream
+                .subscribe {
+                    presentErrorDialog("Duplicated contact!")
+                }
+
         viewModel.init()
 
     }
@@ -155,6 +161,10 @@ class ClientView: JFrame("Client") {
         val contact = Contact(components[0], components[1])
         contactsStream.onNext(contact)
 
+    }
+
+    private fun presentErrorDialog(error: String) {
+        JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.ERROR_MESSAGE)
     }
 
     companion object {
