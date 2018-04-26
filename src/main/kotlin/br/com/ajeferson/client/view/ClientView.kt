@@ -12,6 +12,9 @@ class ClientView: JFrame("Client") {
 
     private var container: Container = contentPane
     private lateinit var table: JTable
+    private lateinit var addBtn: JButton
+    private lateinit var removeBtn: JButton
+    private lateinit var connectBtn: JButton
 
     // ViewModels
     private var viewModel: ClientViewModel
@@ -27,6 +30,7 @@ class ClientView: JFrame("Client") {
     // Streams
     private val contactsStream: PublishSubject<Contact> = PublishSubject.create()
     private val removeStream: PublishSubject<Int> = PublishSubject.create()
+    private val connectStream: PublishSubject<Unit> = PublishSubject.create()
 
 
     private lateinit var statusArea: JTextArea
@@ -44,7 +48,7 @@ class ClientView: JFrame("Client") {
         container.add(bottomPanel, BorderLayout.SOUTH)
 
         // Init View Model
-        viewModel = ClientViewModel(contactsStream, removeStream)
+        viewModel = ClientViewModel(contactsStream, removeStream, connectStream)
 
         // Init Table View
         container.add(tablePane, BorderLayout.CENTER)
@@ -56,7 +60,13 @@ class ClientView: JFrame("Client") {
         viewModel
                 .statusStream
                 .subscribe {
-                    statusViewModel = StatusViewModel(it.description)
+                    if(!it.isConnected) {
+                        statusViewModel = StatusViewModel(it.description)
+                    }
+                    addBtn.isEnabled = it.isConnected
+                    removeBtn.isEnabled = it.isConnected
+                    connectBtn.isEnabled = it.isDisconnected
+
                 }
 
         viewModel
@@ -72,9 +82,10 @@ class ClientView: JFrame("Client") {
                 }
 
         viewModel
-                .duplicateStream
+                .errorStream
                 .subscribe {
-                    presentErrorDialog("Duplicated contact!")
+                    statusViewModel = StatusViewModel(it)
+                    presentErrorDialog(it)
                 }
 
         viewModel.init()
@@ -87,7 +98,7 @@ class ClientView: JFrame("Client") {
         panel.background = Color.RED
 
         // Button Add Contact
-        val addBtn = JButton("Add Contact")
+        addBtn = JButton("Add Contact")
 
         addBtn.addActionListener {
             presentInputContactDialog()
@@ -96,7 +107,7 @@ class ClientView: JFrame("Client") {
         panel.add(addBtn)
 
         // Remove Contact
-        val removeBtn = JButton("Remove Contact")
+        removeBtn = JButton("Remove Contact")
         panel.add(removeBtn)
         removeBtn.addActionListener {
             if(table.selectedRow >= 0) {
@@ -112,6 +123,12 @@ class ClientView: JFrame("Client") {
     private val sidePanel: JPanel get() {
 
         val panel = JPanel(BorderLayout())
+
+        connectBtn = JButton("Connect")
+        connectBtn.addActionListener {
+            connectStream.onNext(Unit)
+        }
+        panel.add(connectBtn, BorderLayout.NORTH)
 
         // Status area on center
         statusArea = JTextArea()

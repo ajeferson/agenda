@@ -19,7 +19,10 @@ import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
 
-class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observable<Int>): TableDataSource {
+class ClientViewModel(
+        contactsStream: Observable<Contact>,
+        removeStream: Observable<Int>,
+        connectStream: Observable<Unit>): TableDataSource {
 
     private lateinit var namingContext: NamingContext
 
@@ -36,15 +39,21 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
     var status = Status.DISCONNECTED
         set(value) {
             field = value
-            if(!value.isConnected) {
-                statusStream.onNext(value)
+            statusStream.onNext(value)
+        }
+
+    var error: String? = null
+        set(value) {
+            field = value
+            if(value != null && value.isNotEmpty()) {
+                errorStream.onNext(value)
             }
         }
 
     val statusStream: PublishSubject<Status> = PublishSubject.create()
     val agendaStream: PublishSubject<String> = PublishSubject.create()
     val reloadStream: PublishSubject<Boolean> = PublishSubject.create()
-    val duplicateStream: PublishSubject<Boolean> = PublishSubject.create()
+    val errorStream: PublishSubject<String> = PublishSubject.create()
 
     private val disposables = CompositeDisposable()
 
@@ -54,9 +63,13 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
         contactsStream
                 .subscribe {
                     if(contacts.firstOrNull { elem -> elem.name == it.name } != null) {
-                        duplicateStream.onNext(true)
+                        error = "Duplicated contact!"
                     } else {
-                        agendaServer?.insert(it.name, it.phoneNumber)
+                        try {
+                            agendaServer?.insert(it.name, it.phoneNumber)
+                        } catch (e: Exception) {
+                            clear()
+                        }
                     }
                 }
                 .disposedBy(disposables)
@@ -64,8 +77,18 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
         removeStream
                 .subscribe {
                     val contact = contacts[it]
-                    agendaServer?.remove(contact.name)
+                    try {
+                        agendaServer?.remove(contact.name)
+                    } catch (e: Exception) {
+                        clear()
+                    }
                 }
+
+        connectStream
+                .subscribe {
+                    connect()
+                }
+                .disposedBy(disposables)
 
     }
 
@@ -150,12 +173,19 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
 
         status = if(agendaServer != null) {
             agendaStream.onNext("Connected to ${agendaId(id)}")
-
             Status.CONNECTED
         } else {
             Status.DISCONNECTED
         }
 
+    }
+
+    private fun clear() {
+        agendaServer = null
+        contacts.clear()
+        reloadStream.onNext(true)
+        status = Status.DISCONNECTED
+        error = "Dead connection"
     }
 
 
@@ -203,6 +233,7 @@ class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observa
         CONNECTED("Connected");
 
         val isConnected: Boolean get() = this == CONNECTED
+        val isDisconnected: Boolean get() = this == DISCONNECTED
 
     }
 
