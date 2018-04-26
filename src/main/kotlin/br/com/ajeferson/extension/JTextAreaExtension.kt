@@ -1,6 +1,6 @@
 package br.com.ajeferson.extension
 
-import br.com.ajeferson.client.StatusViewModel
+import br.com.ajeferson.client.viewModel.StatusViewModel
 import javax.swing.JTextArea
 
 fun JTextArea.lineBreakAppend(text: String) {

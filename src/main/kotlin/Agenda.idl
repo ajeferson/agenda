@@ -9,6 +9,7 @@ module br {
                 interface Agenda {
                     boolean isAlive();
                     boolean insert(in string name, in string phoneNumber);
+                    boolean remove(in string name);
                 };
 
                 interface IdentityManager {

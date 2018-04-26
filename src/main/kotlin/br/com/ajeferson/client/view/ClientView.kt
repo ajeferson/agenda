@@ -1,5 +1,7 @@
-package br.com.ajeferson.client
+package br.com.ajeferson.client.view
 
+import br.com.ajeferson.client.viewModel.ClientViewModel
+import br.com.ajeferson.client.viewModel.StatusViewModel
 import br.com.ajeferson.entity.Contact
 import br.com.ajeferson.extension.append
 import io.reactivex.subjects.PublishSubject
@@ -9,6 +11,7 @@ import javax.swing.*
 class ClientView: JFrame("Client") {
 
     private var container: Container = contentPane
+    private lateinit var table: JTable
 
     // ViewModels
     private var viewModel: ClientViewModel
@@ -23,6 +26,7 @@ class ClientView: JFrame("Client") {
 
     // Streams
     private val contactsStream: PublishSubject<Contact> = PublishSubject.create()
+    private val removeStream: PublishSubject<Int> = PublishSubject.create()
 
 
     private lateinit var statusArea: JTextArea
@@ -40,7 +44,7 @@ class ClientView: JFrame("Client") {
         container.add(bottomPanel, BorderLayout.SOUTH)
 
         // Init View Model
-        viewModel = ClientViewModel(contactsStream)
+        viewModel = ClientViewModel(contactsStream, removeStream)
 
         // Init Table View
         container.add(tablePane, BorderLayout.CENTER)
@@ -88,6 +92,11 @@ class ClientView: JFrame("Client") {
         // Remove Contact
         val removeBtn = JButton("Remove Contact")
         panel.add(removeBtn)
+        removeBtn.addActionListener {
+            if(table.selectedRow >= 0) {
+                removeStream.onNext(table.selectedRow)
+            }
+        }
 
         panel.preferredSize = Dimension(0, 35)
         return panel
@@ -113,7 +122,7 @@ class ClientView: JFrame("Client") {
     private val tablePane: JScrollPane get() {
 
         tableModel = ClientTableModel(viewModel)
-        val table = JTable(tableModel)
+        table = JTable(tableModel)
         val scroll = JScrollPane(table)
 
         table.fillsViewportHeight = true

@@ -7,6 +7,7 @@ import io.reactivex.subjects.PublishSubject
 class AgendaImpl(val id: String): AgendaPOA() {
 
     val insertStream: PublishSubject<Contact> = PublishSubject.create()
+    val removeStream: PublishSubject<String> = PublishSubject.create()
 
     override fun isAlive(): Boolean {
         return true
@@ -19,6 +20,18 @@ class AgendaImpl(val id: String): AgendaPOA() {
         }
 
         insertStream.onNext(Contact(name, phoneNumber))
+
+        return true
+
+    }
+
+    override fun remove(name: String?): Boolean {
+
+        if(name == null) {
+            return false
+        }
+
+        removeStream.onNext(name)
 
         return true
 

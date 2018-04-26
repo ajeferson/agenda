@@ -1,4 +1,4 @@
-package br.com.ajeferson.client
+package br.com.ajeferson.client.viewModel
 
 import java.text.SimpleDateFormat
 import java.util.*

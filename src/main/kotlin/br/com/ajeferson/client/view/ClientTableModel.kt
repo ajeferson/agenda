@@ -1,4 +1,4 @@
-package br.com.ajeferson.client
+package br.com.ajeferson.client.view
 
 import br.com.ajeferson.client.protocol.TableDataSource
 import javax.swing.SwingUtilities
@@ -19,5 +19,7 @@ class ClientTableModel(dataSource: TableDataSource): AbstractTableModel(), Table
     fun reloadData() {
         SwingUtilities.invokeLater { fireTableDataChanged() }
     }
+
+
 
 }

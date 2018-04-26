@@ -1,14 +1,17 @@
-package br.com.ajeferson.client
+package br.com.ajeferson.client.viewModel
 
+import br.com.ajeferson.client.AgendaImpl
 import br.com.ajeferson.client.protocol.TableDataSource
 import br.com.ajeferson.corba.Agenda
-import br.com.ajeferson.server.AgendaServer
 import br.com.ajeferson.corba.AgendaHelper
 import br.com.ajeferson.corba.IdentityManager
 import br.com.ajeferson.corba.IdentityManagerHelper
 import br.com.ajeferson.entity.Contact
+import br.com.ajeferson.enumeration.AgendaKind
+import br.com.ajeferson.extension.disposedBy
 import br.com.ajeferson.server.Server
 import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.subjects.PublishSubject
 import org.omg.CORBA.ORB
 import org.omg.CosNaming.NameComponent
@@ -16,13 +19,13 @@ import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
 
-class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
+class ClientViewModel(contactsStream: Observable<Contact>, removeStream: Observable<Int>): TableDataSource {
 
     private lateinit var namingContext: NamingContext
 
     // Agendas
     var agendaServer: Agenda? = null
-    var agendaClient: AgendaImpl? = null
+    private lateinit var agendaClient: AgendaImpl
 
     private var identityManager: IdentityManager? = null
 
@@ -42,12 +45,21 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
     val agendaStream: PublishSubject<String> = PublishSubject.create()
     val reloadStream: PublishSubject<Boolean> = PublishSubject.create()
 
+    private val disposables = CompositeDisposable()
+
 
     init {
 
         contactsStream
                 .subscribe {
-                    sendContact(it)
+                    agendaServer?.insert(it.name, it.phoneNumber)
+                }
+                .disposedBy(disposables)
+
+        removeStream
+                .subscribe {
+                    val contact = contacts[it]
+                    agendaServer?.remove(contact.name)
                 }
 
     }
@@ -73,17 +85,25 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
         // Subscribe Client's agendaServer
         agendaClient = AgendaImpl("client0")
         val objRef = rootPoa.servant_to_reference(agendaClient)
-        val components = arrayOf(NameComponent(agendaClient?.id, AgendaServer.KIND))
+        val components = arrayOf(NameComponent(agendaClient.id, AgendaKind.AGENDA.description))
         namingContext.rebind(components, objRef)
 
         rootPoa.the_POAManager().activate()
 
         // Subscribe to the new contact stream
-        agendaClient!!
+        agendaClient
                 .insertStream
                 .subscribe {
                     didReceiveContact(it)
                 }
+                .disposedBy(disposables)
+
+        agendaClient
+                .removeStream
+                .subscribe {
+                    didRemoveContact(it)
+                }
+                .disposedBy(disposables)
 
     }
 
@@ -105,7 +125,7 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
             try {
 
                 // Get the AgendaServer
-                val name = arrayOf(NameComponent(agendaId(id), AgendaServer.KIND))
+                val name = arrayOf(NameComponent(agendaId(id), AgendaKind.AGENDA.description))
                 val objRef = namingContext.resolve(name)
                 agendaServer = AgendaHelper.narrow(objRef)
                 agendaServer?.isAlive
@@ -134,14 +154,21 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
     }
 
 
+    /**
+     * Called remotely from server
+     * */
+
     private fun didReceiveContact(contact: Contact) {
         contacts.add(contact)
         reloadStream.onNext(true)
     }
 
-    private fun sendContact(contact: Contact) {
-        agendaServer?.insert(contact.name, contact.phoneNumber)
+    private fun didRemoveContact(name: String) {
+        contacts.removeIf { it.name == name }
+        reloadStream.onNext(true)
     }
+
+
 
     /**
      * Helper

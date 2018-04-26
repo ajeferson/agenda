@@ -4,6 +4,7 @@ import br.com.ajeferson.client.AgendaImpl
 import br.com.ajeferson.corba.AgendaHelper
 import br.com.ajeferson.corba.IdentityManagerPOA
 import br.com.ajeferson.entity.Contact
+import br.com.ajeferson.enumeration.AgendaKind
 import br.com.ajeferson.extension.disposedBy
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -43,7 +44,7 @@ class Server(args: Array<String>): IdentityManagerPOA() {
             // Bind AgendaServer
             agenda = AgendaImpl(args[2])
             val objRef = rootPoa.servant_to_reference(agenda)
-            val components = arrayOf(NameComponent(agenda.id, AgendaServer.KIND))
+            val components = arrayOf(NameComponent(agenda.id, AgendaKind.AGENDA.description))
             namingContext.rebind(components, objRef)
 
             // Bind IdentityManager
@@ -75,6 +76,15 @@ class Server(args: Array<String>): IdentityManagerPOA() {
                 }
                 .disposedBy(disposables)
 
+        agenda
+                .removeStream
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.newThread())
+                .subscribe {
+                    didRemoveContact(it)
+                }
+                .disposedBy(disposables)
+
     }
 
 
@@ -89,7 +99,7 @@ class Server(args: Array<String>): IdentityManagerPOA() {
             return
         }
 
-        val name = arrayOf(NameComponent(identity, AgendaServer.KIND))
+        val name = arrayOf(NameComponent(identity, AgendaKind.AGENDA.description))
         val ref = namingContext.resolve(name)
         clients.add(AgendaHelper.narrow(ref))
 
@@ -101,13 +111,22 @@ class Server(args: Array<String>): IdentityManagerPOA() {
      * Contacts
      * */
 
-
     private fun didReceiveContact(contact: Contact) {
         // Broadcast to all clients
         // TODO Broadcast to agendas
         clients.forEach { agenda ->
             try {
                 agenda.insert(contact.name, contact.phoneNumber)
+            } catch (e: Exception) {
+
+            }
+        }
+    }
+
+    private fun didRemoveContact(name: String) {
+        clients.forEach { agenda ->
+            try {
+                agenda.remove(name)
             } catch (e: Exception) {
 
             }
