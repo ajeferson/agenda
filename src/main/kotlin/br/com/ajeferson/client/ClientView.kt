@@ -1,7 +1,7 @@
 package br.com.ajeferson.client
 
 import br.com.ajeferson.entity.Contact
-import io.reactivex.Observable
+import br.com.ajeferson.extension.append
 import io.reactivex.subjects.PublishSubject
 import java.awt.*
 import javax.swing.*
@@ -12,8 +12,19 @@ class ClientView: JFrame("Client") {
 
     private var viewModel: ClientViewModel
 
+    private var statusViewModel: StatusViewModel? = null
+    set(value) {
+        field = value
+        if(value != null) {
+            statusArea.append(value)
+        }
+    }
+
     // Streams
-    private val contactsStream: PublishSubject<Contact> = PublishSubject.create<Contact>()
+    private val contactsStream: PublishSubject<Contact> = PublishSubject.create()
+
+
+    private lateinit var statusArea: JTextArea
 
 
     init {
@@ -23,7 +34,8 @@ class ClientView: JFrame("Client") {
         isResizable = false
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 
-        // Add bottom buttons
+        // Status
+        container.add(sidePanel, BorderLayout.EAST)
         container.add(bottomPanel, BorderLayout.SOUTH)
 
         // Init View Model
@@ -36,6 +48,20 @@ class ClientView: JFrame("Client") {
         isVisible = true
         requestFocus()
 
+        viewModel
+                .statusStream
+                .subscribe {
+                    statusViewModel = StatusViewModel(it.description)
+                }
+
+        viewModel
+                .agendaStream
+                .subscribe {
+                    statusViewModel = StatusViewModel(it)
+                }
+
+        viewModel.init()
+
     }
 
     private val bottomPanel: JPanel get()  {
@@ -46,10 +72,8 @@ class ClientView: JFrame("Client") {
         // Button Add Contact
         val addBtn = JButton("Add Contact")
 
-        Observable.create<Unit> { emitter ->
-            addBtn.addActionListener {
-                emitter.onNext(Unit)
-            }
+        addBtn.addActionListener {
+
         }
 
         panel.add(addBtn)
@@ -57,6 +81,23 @@ class ClientView: JFrame("Client") {
         // Remove Contact
         val removeBtn = JButton("Remove Contact")
         panel.add(removeBtn)
+
+        panel.preferredSize = Dimension(0, 35)
+        return panel
+
+    }
+
+    private val sidePanel: JPanel get() {
+
+        val panel = JPanel(BorderLayout())
+
+        // Status area on center
+        statusArea = JTextArea()
+        statusArea.preferredSize = Dimension(250, 0)
+        statusArea.isEditable = false
+
+        val scroll = JScrollPane(statusArea)
+        panel.add(scroll)
 
         return panel
 
@@ -82,11 +123,12 @@ class ClientView: JFrame("Client") {
         table.columnSelectionAllowed = false
 
         return scroll
+
     }
 
     companion object {
 
-        private const val WIDTH = 500
+        private const val WIDTH = 700
         private const val HEIGHT = 500
 
     }

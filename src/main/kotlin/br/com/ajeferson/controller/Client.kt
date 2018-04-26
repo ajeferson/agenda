@@ -20,52 +20,27 @@ class Client(args: Array<String>) {
 
     }
 
-    private fun agendaId(number: Int) = "agenda$number"
-
-    fun connect() {
-
-        var i = 0
-
-        while (i < NUMBER_OF_AGENDAS && agenda == null) {
-
-            i++
-
-            try {
-                val name = arrayOf(NameComponent(agendaId(i), Agenda.KIND))
-                val objRef = namingContext.resolve(name)
-                agenda = AgendaHelper.narrow(objRef)
-                agenda?.isAlive
-            } catch (e: Exception) {
-                agenda = null
-            }
-
-        }
-
-        if(agenda != null) {
-            println("Connected to ${agendaId(i)}")
-        } else {
-            println("Could not connect to any of the agendas :(")
-        }
-
-    }
 
 
 
-    /**
-     * Contact methods
-     * */
 
 
-    companion object {
 
-        private const val NUMBER_OF_AGENDAS = 3
-
-    }
+//    /**
+//     * Contact methods
+//     * */
+//
+//
+//    companion object {
+//
+//
+//
+//    }
 
 }
 
 fun main(args: Array<String>) {
-    val client = Client(args)
-    client.connect()
-    client.agenda?.insert("Kiko", "123456")
+//    val client = Client(args)
+//    client.connect()
+//    client.agenda?.insert("Kiko", "123456")
 }
