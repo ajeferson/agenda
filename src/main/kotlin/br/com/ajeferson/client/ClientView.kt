@@ -10,8 +10,8 @@ class ClientView: JFrame("Client") {
 
     private var container: Container = contentPane
 
+    // ViewModels
     private var viewModel: ClientViewModel
-
     private var statusViewModel: StatusViewModel? = null
     set(value) {
         field = value
@@ -19,6 +19,7 @@ class ClientView: JFrame("Client") {
             statusArea.append(value)
         }
     }
+    private lateinit var tableModel: ClientTableModel
 
     // Streams
     private val contactsStream: PublishSubject<Contact> = PublishSubject.create()
@@ -58,6 +59,12 @@ class ClientView: JFrame("Client") {
                 .agendaStream
                 .subscribe {
                     statusViewModel = StatusViewModel(it)
+                }
+
+        viewModel
+                .reloadStream
+                .subscribe {
+                    tableModel.reloadData()
                 }
 
         viewModel.init()
@@ -105,7 +112,8 @@ class ClientView: JFrame("Client") {
 
     private val tablePane: JScrollPane get() {
 
-        val table = JTable(ClientTableModel(viewModel))
+        tableModel = ClientTableModel(viewModel)
+        val table = JTable(tableModel)
         val scroll = JScrollPane(table)
 
         table.fillsViewportHeight = true

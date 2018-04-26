@@ -15,11 +15,19 @@ class AgendaServer(val id: String): AgendaPOA() {
     }
 
     override fun insert(name: String?, phoneNumber: String?): Boolean {
+
         if(name == null || phoneNumber == null) {
             return false
         }
-        println("Inserting: $name $phoneNumber")
+
+        val contact = Contact(name, phoneNumber)
+        contacts.add(contact)
+
+        // Tell that a new contact has arrived
+        insertStream.onNext(contact)
+
         return true
+
     }
 
     companion object {

@@ -20,8 +20,9 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
 
     private lateinit var namingContext: NamingContext
 
-    var agenda: Agenda? = null
-    var agendaClient: AgendaClient? = null
+    // Agendas
+    var agendaServer: Agenda? = null
+    var agendaClient: AgendaImpl? = null
 
     private var identityManager: IdentityManager? = null
 
@@ -39,13 +40,14 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
 
     val statusStream: PublishSubject<Status> = PublishSubject.create()
     val agendaStream: PublishSubject<String> = PublishSubject.create()
+    val reloadStream: PublishSubject<Boolean> = PublishSubject.create()
 
 
     init {
 
         contactsStream
                 .subscribe {
-                    print("New Contact: $it")
+                    sendContact(it)
                 }
 
     }
@@ -68,8 +70,8 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
 
         val rootPoa = POAHelper.narrow(objPoa)
 
-        // Subscribe Client's agenda
-        agendaClient = AgendaClient()
+        // Subscribe Client's agendaServer
+        agendaClient = AgendaImpl("client0")
         val objRef = rootPoa.servant_to_reference(agendaClient)
         val components = arrayOf(NameComponent(agendaClient?.id, AgendaServer.KIND))
         namingContext.rebind(components, objRef)
@@ -96,7 +98,7 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
 
         var id = 0
 
-        while (id < NUMBER_OF_AGENDAS && agenda == null) {
+        while (id < NUMBER_OF_AGENDAS && agendaServer == null) {
 
             id++
 
@@ -105,8 +107,8 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
                 // Get the AgendaServer
                 val name = arrayOf(NameComponent(agendaId(id), AgendaServer.KIND))
                 val objRef = namingContext.resolve(name)
-                agenda = AgendaHelper.narrow(objRef)
-                agenda?.isAlive
+                agendaServer = AgendaHelper.narrow(objRef)
+                agendaServer?.isAlive
 
 
                 // Get the ClientServer
@@ -116,12 +118,12 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
                 identityManager?.identify("client0") // TODO Refactor
 
             } catch (e: Exception) {
-                agenda = null
+                agendaServer = null
             }
 
         }
 
-        status = if(agenda != null) {
+        status = if(agendaServer != null) {
             agendaStream.onNext("Connected to ${agendaId(id)}")
 
             Status.CONNECTED
@@ -132,8 +134,13 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
     }
 
 
-    fun didReceiveContact(contact: Contact) {
+    private fun didReceiveContact(contact: Contact) {
+        contacts.add(contact)
+        reloadStream.onNext(true)
+    }
 
+    private fun sendContact(contact: Contact) {
+        agendaServer?.insert(contact.name, contact.phoneNumber)
     }
 
     /**
@@ -146,7 +153,7 @@ class ClientViewModel(contactsStream: Observable<Contact>): TableDataSource {
      * Table Data Source
      * */
 
-    override fun numberOfRows()= contacts.size
+    override fun numberOfRows() = contacts.size
 
     override fun numberOfColumns() = columns.size
 

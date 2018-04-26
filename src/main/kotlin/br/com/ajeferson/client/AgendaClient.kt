@@ -4,10 +4,7 @@ import br.com.ajeferson.corba.AgendaPOA
 import br.com.ajeferson.entity.Contact
 import io.reactivex.subjects.PublishSubject
 
-class AgendaClient: AgendaPOA() {
-
-    // TODO GenerateID randomly
-    val id = "client0"
+class AgendaImpl(val id: String): AgendaPOA() {
 
     val insertStream: PublishSubject<Contact> = PublishSubject.create()
 
