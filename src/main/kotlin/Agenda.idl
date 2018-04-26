@@ -11,6 +11,10 @@ module br {
                     boolean insert(in string name, in string phoneNumber);
                 };
 
+                interface IdentityManager {
+                    void identify(in string identity);
+                };
+
             };
 
         };

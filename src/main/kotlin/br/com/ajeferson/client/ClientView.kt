@@ -73,7 +73,7 @@ class ClientView: JFrame("Client") {
         val addBtn = JButton("Add Contact")
 
         addBtn.addActionListener {
-
+            presentInputContactDialog()
         }
 
         panel.add(addBtn)
@@ -123,6 +123,20 @@ class ClientView: JFrame("Client") {
         table.columnSelectionAllowed = false
 
         return scroll
+
+    }
+
+    private fun presentInputContactDialog() {
+
+        val input = JOptionPane.showInputDialog("Type the contact's name and phone number separated by a semicolon:")
+        val components = input.split(";")
+
+        if(components.size < 2) {
+            return
+        }
+
+        val contact = Contact(components[0], components[1])
+        contactsStream.onNext(contact)
 
     }
 

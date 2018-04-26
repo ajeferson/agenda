@@ -1,11 +1,14 @@
-package br.com.ajeferson.controller
+package br.com.ajeferson.server
 
 import br.com.ajeferson.corba.AgendaPOA
 import br.com.ajeferson.entity.Contact
+import io.reactivex.subjects.PublishSubject
 
-class Agenda(val id: String): AgendaPOA() {
+class AgendaServer(val id: String): AgendaPOA() {
 
     val contacts = mutableListOf<Contact>()
+
+    val insertStream: PublishSubject<Contact> = PublishSubject.create()
 
     override fun isAlive(): Boolean {
         return true
@@ -21,7 +24,7 @@ class Agenda(val id: String): AgendaPOA() {
 
     companion object {
 
-        const val KIND = "Agenda"
+        const val KIND = "AgendaServer"
 
     }
 
