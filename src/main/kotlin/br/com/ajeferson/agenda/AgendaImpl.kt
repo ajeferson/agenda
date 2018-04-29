@@ -1,4 +1,4 @@
-package br.com.ajeferson.client
+package br.com.ajeferson.agenda
 
 import br.com.ajeferson.corba.AgendaPOA
 import br.com.ajeferson.entity.Contact
@@ -49,10 +49,6 @@ class AgendaImpl(val id: String): AgendaPOA() {
 
         return true
 
-    }
-
-    companion object {
-        const val NUMBER_OF_AGENDAS = 3
     }
 
 }

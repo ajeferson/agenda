@@ -1,6 +1,6 @@
 package br.com.ajeferson.server
 
-import br.com.ajeferson.client.AgendaImpl
+import br.com.ajeferson.agenda.AgendaImpl
 import br.com.ajeferson.corba.AgendaHelper
 import br.com.ajeferson.corba.IdentityManagerHelper
 import br.com.ajeferson.corba.IdentityManagerPOA
@@ -17,7 +17,7 @@ import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POA
 import org.omg.PortableServer.POAHelper
 
-class Server(args: Array<String>): IdentityManagerPOA() {
+class Server(id: String, ip: String, amount: Int): IdentityManagerPOA() {
 
     private val clients = mutableListOf<br.com.ajeferson.corba.Agenda>()
     private lateinit var agenda: AgendaImpl
@@ -31,12 +31,9 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
     init {
 
-        if(args.size < 3) {
-            throw IllegalArgumentException("Provide the Server id")
-        }
-
         try {
 
+            val args = arrayOf("[-ORBInitialHost", "$ip]", "agenda$id")
             val orb = ORB.init(args, null)
 
             val objPoa = orb.resolve_initial_references("RootPOA")
@@ -58,11 +55,11 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
             rootPoa.the_POAManager().activate()
 
-            println("Agenda ${agenda.id} is ready")
+            println("Server ${agenda.id} is running at $ip")
 
             observe()
 
-            connect()
+            connect(amount)
 
             orb.run()
 
@@ -102,12 +99,12 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
     }
 
-    private fun connect() {
+    private fun connect(amount: Int) {
 
         var id = 0
         var sync = true
 
-        while (id < AgendaImpl.NUMBER_OF_AGENDAS) {
+        while (id < amount) {
 
             id++
 
@@ -224,8 +221,4 @@ class Server(args: Array<String>): IdentityManagerPOA() {
 
     }
 
-}
-
-fun main(args: Array<String>) {
-    Server(args)
 }

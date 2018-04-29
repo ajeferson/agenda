@@ -1,5 +1,7 @@
-package br.com.ajeferson.client.view
+package br.com.ajeferson.client
 
+import br.com.ajeferson.client.view.ClientTableModel
+import br.com.ajeferson.client.view.SearchResultsView
 import br.com.ajeferson.client.viewModel.ClientViewModel
 import br.com.ajeferson.client.viewModel.StatusViewModel
 import br.com.ajeferson.entity.Contact
@@ -8,7 +10,7 @@ import io.reactivex.subjects.PublishSubject
 import java.awt.*
 import javax.swing.*
 
-class ClientView: JFrame("Client") {
+class Client(ip: String, amount: Int): JFrame("Client") {
 
     private var container: Container = contentPane
     private lateinit var table: JTable
@@ -50,7 +52,7 @@ class ClientView: JFrame("Client") {
         container.add(bottomPanel, BorderLayout.SOUTH)
 
         // Init View Model
-        viewModel = ClientViewModel(contactsStream, removeStream, connectStream, searchStream)
+        viewModel = ClientViewModel(ip, amount, contactsStream, removeStream, connectStream, searchStream)
 
         // Init Table View
         container.add(tablePane, BorderLayout.CENTER)
@@ -104,7 +106,6 @@ class ClientView: JFrame("Client") {
     private val bottomPanel: JPanel get()  {
 
         val panel = JPanel(GridLayout(1, 3))
-        panel.background = Color.RED
 
         // Button Add Contact
         addBtn = JButton("Add Contact")
@@ -183,14 +184,21 @@ class ClientView: JFrame("Client") {
 
     private fun presentInputContactDialog() {
 
-        val input = JOptionPane.showInputDialog("Type the contact's name and phone number separated by a semicolon:")
-        val components = input.split(";")
+        val name = JOptionPane.showInputDialog("Type the contact's name:") ?: return
 
-        if(components.size < 2) {
+        if(name.trim().isEmpty()) {
+            presentErrorDialog("A contact must have a name")
             return
         }
 
-        val contact = Contact(components[0], components[1])
+        val number = JOptionPane.showInputDialog("Type the contact's phone number:") ?: return
+
+        if(number.trim().isEmpty()) {
+            presentErrorDialog("A contact must have a phone number")
+            return
+        }
+
+        val contact = Contact(name, number)
         contactsStream.onNext(contact)
 
     }
@@ -230,11 +238,5 @@ class ClientView: JFrame("Client") {
         private const val HEIGHT = 500
 
     }
-
-}
-
-fun main(args: Array<String>) {
-
-    SwingUtilities.invokeLater { ClientView() }
 
 }

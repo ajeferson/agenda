@@ -1,6 +1,6 @@
 package br.com.ajeferson.client.viewModel
 
-import br.com.ajeferson.client.AgendaImpl
+import br.com.ajeferson.agenda.AgendaImpl
 import br.com.ajeferson.client.protocol.TableDataSource
 import br.com.ajeferson.client.protocol.TableDelegate
 import br.com.ajeferson.corba.Agenda
@@ -22,6 +22,8 @@ import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
 
 class ClientViewModel(
+        private val ip: String,
+        private val amount: Int,
         contactsStream: Observable<Contact>,
         removeStream: Observable<Int>,
         connectStream: Observable<Unit>,
@@ -110,7 +112,8 @@ class ClientViewModel(
 
     private fun initCorba() {
 
-        val orb = ORB.init(arrayOf(), null)
+        val args = arrayOf("[-ORBInitialHost", "$ip]")
+        val orb = ORB.init(args, null)
 
         // Initial references
         val objPoa = orb.resolve_initial_references("RootPOA")
@@ -163,7 +166,7 @@ class ClientViewModel(
 
         var id = 0
 
-        while (id < NUMBER_OF_AGENDAS && agendaServer == null) {
+        while (id < amount && agendaServer == null) {
 
             id++
 
@@ -297,10 +300,6 @@ class ClientViewModel(
         val isConnected: Boolean get() = this == CONNECTED
         val isDisconnected: Boolean get() = this == DISCONNECTED
 
-    }
-
-    companion object {
-        private const val NUMBER_OF_AGENDAS = 3
     }
 
 }
