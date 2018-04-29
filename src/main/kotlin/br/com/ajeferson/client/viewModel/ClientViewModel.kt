@@ -20,6 +20,7 @@ import org.omg.CosNaming.NameComponent
 import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
+import java.util.*
 
 class ClientViewModel(
         private val ip: String,
@@ -126,7 +127,7 @@ class ClientViewModel(
         // Subscribe Client's agendaServer
         agendaClient = AgendaImpl("client0")
         val objRef = rootPoa.servant_to_reference(agendaClient)
-        val components = arrayOf(NameComponent(agendaClient.id, AgendaKind.AGENDA.description))
+        val components = arrayOf(NameComponent(agendaClient.id, AgendaKind.AGENDA_CLIENT.description))
         namingContext.rebind(components, objRef)
 
         rootPoa.the_POAManager().activate()
@@ -164,16 +165,18 @@ class ClientViewModel(
 
         status = Status.CONNECTING
 
-        var id = 0
+        val ids = (1..amount).map { it }.toMutableList()
+        var id = -1
 
-        while (id < amount && agendaServer == null) {
+        while (ids.isNotEmpty() && agendaServer == null) {
 
-            id++
+            val index = Random().nextInt(ids.size)
+            id = ids[index]
 
             try {
 
                 // Get the AgendaServer
-                val name = arrayOf(NameComponent(agendaId(id), AgendaKind.AGENDA.description))
+                val name = arrayOf(NameComponent(agendaId(id), AgendaKind.AGENDA_CLIENT.description))
                 val objRef = namingContext.resolve(name)
                 agendaServer = AgendaHelper.narrow(objRef)
                 agendaServer?.isAlive
@@ -183,10 +186,11 @@ class ClientViewModel(
                 val cName = arrayOf(NameComponent(agendaId(id), Server.IDENTITY_MANAGER_KIND))
                 val cRef = namingContext.resolve(cName)
                 identityManager = IdentityManagerHelper.narrow(cRef)
-                identityManager?.identify("client0", true) // TODO Refactor
+                identityManager?.identify(true, "client0", true) // TODO Refactor
 
             } catch (e: Exception) {
                 agendaServer = null
+                ids.removeAt(index)
             }
 
         }
