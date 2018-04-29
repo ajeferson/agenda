@@ -237,6 +237,7 @@ class ClientViewModel(
 
     private fun didReceiveContact(contact: Contact) {
         contacts.add(contact)
+        contacts.sortBy { it.name }
         reloadStream.onNext(Unit)
     }
 
@@ -251,6 +252,7 @@ class ClientViewModel(
             return
         }
         contacts[index] = dto.update.copy()
+        contacts.sortBy { it.name }
         reloadStream.onNext(Unit)
     }
 
