@@ -15,6 +15,7 @@ class ClientView: JFrame("Client") {
     private lateinit var addBtn: JButton
     private lateinit var removeBtn: JButton
     private lateinit var connectBtn: JButton
+    private lateinit var searchBtn: JButton
 
     // ViewModels
     private var viewModel: ClientViewModel
@@ -30,6 +31,7 @@ class ClientView: JFrame("Client") {
     // Streams
     private val contactsStream: PublishSubject<Contact> = PublishSubject.create()
     private val removeStream: PublishSubject<Int> = PublishSubject.create()
+    private val searchStream: PublishSubject<String> = PublishSubject.create()
     private val connectStream: PublishSubject<Unit> = PublishSubject.create()
 
 
@@ -48,7 +50,7 @@ class ClientView: JFrame("Client") {
         container.add(bottomPanel, BorderLayout.SOUTH)
 
         // Init View Model
-        viewModel = ClientViewModel(contactsStream, removeStream, connectStream)
+        viewModel = ClientViewModel(contactsStream, removeStream, connectStream, searchStream)
 
         // Init Table View
         container.add(tablePane, BorderLayout.CENTER)
@@ -88,13 +90,20 @@ class ClientView: JFrame("Client") {
                     presentErrorDialog(it)
                 }
 
+        viewModel
+                .searchResultsStream
+                .subscribe {
+                    presentSearchResults(it)
+                }
+
+
         viewModel.init()
 
     }
 
     private val bottomPanel: JPanel get()  {
 
-        val panel = JPanel(GridLayout(1, 2))
+        val panel = JPanel(GridLayout(1, 3))
         panel.background = Color.RED
 
         // Button Add Contact
@@ -113,6 +122,12 @@ class ClientView: JFrame("Client") {
             if(table.selectedRow >= 0) {
                 removeStream.onNext(table.selectedRow)
             }
+        }
+
+        searchBtn = JButton("Search Contact")
+        panel.add(searchBtn)
+        searchBtn.addActionListener {
+            presentSearchDialog()
         }
 
         panel.preferredSize = Dimension(0, 35)
@@ -180,8 +195,33 @@ class ClientView: JFrame("Client") {
 
     }
 
+    private fun presentSearchDialog() {
+
+        val input = JOptionPane.showInputDialog("Type your search query:")
+
+        if(input == null || input.isEmpty()) {
+            return
+        }
+
+        searchStream.onNext(input)
+
+    }
+
     private fun presentErrorDialog(error: String) {
         JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.ERROR_MESSAGE)
+    }
+
+    private fun presentInfoDialog(info: String) {
+        JOptionPane.showMessageDialog(null, info, "Error", JOptionPane.INFORMATION_MESSAGE)
+    }
+
+    private fun presentSearchResults(results: List<Contact>) {
+        if(results.isNotEmpty()) {
+            val searchResultsView = SearchResultsView(results)
+            searchResultsView.display()
+        } else {
+            presentInfoDialog("No contacts found")
+        }
     }
 
     companion object {

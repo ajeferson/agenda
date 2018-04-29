@@ -20,13 +20,12 @@ import org.omg.CosNaming.NameComponent
 import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
-import javax.swing.event.TableModelEvent
-import javax.swing.event.TableModelListener
 
 class ClientViewModel(
         contactsStream: Observable<Contact>,
         removeStream: Observable<Int>,
-        connectStream: Observable<Unit>): TableDataSource, TableDelegate {
+        connectStream: Observable<Unit>,
+        searchStream: Observable<String>): TableDataSource, TableDelegate {
 
     private lateinit var namingContext: NamingContext
 
@@ -58,6 +57,7 @@ class ClientViewModel(
     val agendaStream: PublishSubject<String> = PublishSubject.create()
     val reloadStream: PublishSubject<Unit> = PublishSubject.create()
     val errorStream: PublishSubject<String> = PublishSubject.create()
+    val searchResultsStream: PublishSubject<List<Contact>> = PublishSubject.create()
 
     private val disposables = CompositeDisposable()
 
@@ -91,6 +91,12 @@ class ClientViewModel(
         connectStream
                 .subscribe {
                     connect()
+                }
+                .disposedBy(disposables)
+
+        searchStream
+                .subscribe {
+                    search(it)
                 }
                 .disposedBy(disposables)
 
@@ -206,8 +212,16 @@ class ClientViewModel(
         } catch (e: Exception) {
             clear()
         }
-
     }
+
+    private fun search(query: String) {
+        val term = query.trim().toLowerCase()
+        val results = contacts.filter { it.name.toLowerCase().contains(term) ||
+                it.phoneNumber.toLowerCase().contains(term) }
+        val copy = results.map { it.copy() }
+        searchResultsStream.onNext(copy)
+    }
+
 
 
     /**
