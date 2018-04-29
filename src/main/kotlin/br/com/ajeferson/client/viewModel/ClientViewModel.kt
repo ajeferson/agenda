@@ -21,6 +21,10 @@ import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
 import java.util.*
+import java.nio.charset.Charset
+import java.util.Random
+
+
 
 class ClientViewModel(
         private val ip: String,
@@ -64,8 +68,13 @@ class ClientViewModel(
 
     private val disposables = CompositeDisposable()
 
+    private val clientId: String = "client${Random().nextInt(999)}"
+
 
     init {
+
+
+        println(clientId)
 
         contactsStream
                 .subscribe {
@@ -125,7 +134,7 @@ class ClientViewModel(
         val rootPoa = POAHelper.narrow(objPoa)
 
         // Subscribe Client's agendaServer
-        agendaClient = AgendaImpl("client0")
+        agendaClient = AgendaImpl(clientId)
         val objRef = rootPoa.servant_to_reference(agendaClient)
         val components = arrayOf(NameComponent(agendaClient.id, AgendaKind.AGENDA_CLIENT.description))
         namingContext.rebind(components, objRef)
@@ -186,7 +195,7 @@ class ClientViewModel(
                 val cName = arrayOf(NameComponent(agendaId(id), Server.IDENTITY_MANAGER_KIND))
                 val cRef = namingContext.resolve(cName)
                 identityManager = IdentityManagerHelper.narrow(cRef)
-                identityManager?.identify(true, "client0", true) // TODO Refactor
+                identityManager?.identify(true, clientId, true)
 
             } catch (e: Exception) {
                 agendaServer = null
