@@ -10,6 +10,7 @@ module br {
                     boolean isAlive();
                     boolean insert(in string name, in string phoneNumber);
                     boolean remove(in string name);
+                    boolean update(in string oldName, in string newName, in string newPhoneNumber);
                 };
 
                 interface IdentityManager {

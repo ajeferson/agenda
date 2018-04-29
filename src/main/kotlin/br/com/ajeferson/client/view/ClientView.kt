@@ -144,7 +144,7 @@ class ClientView: JFrame("Client") {
 
     private val tablePane: JScrollPane get() {
 
-        tableModel = ClientTableModel(viewModel)
+        tableModel = ClientTableModel(viewModel, viewModel)
         table = JTable(tableModel)
         val scroll = JScrollPane(table)
 

@@ -5,6 +5,7 @@ import br.com.ajeferson.corba.AgendaHelper
 import br.com.ajeferson.corba.IdentityManagerHelper
 import br.com.ajeferson.corba.IdentityManagerPOA
 import br.com.ajeferson.entity.Contact
+import br.com.ajeferson.entity.UpdateContactDto
 import br.com.ajeferson.enumeration.AgendaKind
 import br.com.ajeferson.extension.disposedBy
 import io.reactivex.disposables.CompositeDisposable
@@ -87,6 +88,15 @@ class Server(args: Array<String>): IdentityManagerPOA() {
                 .observeOn(Schedulers.newThread())
                 .subscribe {
                     didRemoveContact(it)
+                }
+                .disposedBy(disposables)
+
+        agenda
+                .updateStream
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.newThread())
+                .subscribe {
+                    didUpdateContact(it)
                 }
                 .disposedBy(disposables)
 
@@ -181,6 +191,26 @@ class Server(args: Array<String>): IdentityManagerPOA() {
         clients.forEach { agenda ->
             try {
                 agenda.remove(name)
+            } catch (e: Exception) {
+
+            }
+        }
+
+    }
+
+    private fun didUpdateContact(dto: UpdateContactDto) {
+
+        val index = contacts.indexOfFirst { it.name == dto.oldName }
+
+        if(index < 0) {
+            return
+        }
+
+        contacts[index] = dto.update.copy()
+
+        clients.forEach { agenda ->
+            try {
+                agenda.update(dto.oldName, dto.update.name, dto.update.phoneNumber)
             } catch (e: Exception) {
 
             }

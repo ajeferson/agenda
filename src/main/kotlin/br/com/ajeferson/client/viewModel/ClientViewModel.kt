@@ -2,11 +2,13 @@ package br.com.ajeferson.client.viewModel
 
 import br.com.ajeferson.client.AgendaImpl
 import br.com.ajeferson.client.protocol.TableDataSource
+import br.com.ajeferson.client.protocol.TableDelegate
 import br.com.ajeferson.corba.Agenda
 import br.com.ajeferson.corba.AgendaHelper
 import br.com.ajeferson.corba.IdentityManager
 import br.com.ajeferson.corba.IdentityManagerHelper
 import br.com.ajeferson.entity.Contact
+import br.com.ajeferson.entity.UpdateContactDto
 import br.com.ajeferson.enumeration.AgendaKind
 import br.com.ajeferson.extension.disposedBy
 import br.com.ajeferson.server.Server
@@ -18,11 +20,13 @@ import org.omg.CosNaming.NameComponent
 import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
+import javax.swing.event.TableModelEvent
+import javax.swing.event.TableModelListener
 
 class ClientViewModel(
         contactsStream: Observable<Contact>,
         removeStream: Observable<Int>,
-        connectStream: Observable<Unit>): TableDataSource {
+        connectStream: Observable<Unit>): TableDataSource, TableDelegate {
 
     private lateinit var namingContext: NamingContext
 
@@ -52,7 +56,7 @@ class ClientViewModel(
 
     val statusStream: PublishSubject<Status> = PublishSubject.create()
     val agendaStream: PublishSubject<String> = PublishSubject.create()
-    val reloadStream: PublishSubject<Boolean> = PublishSubject.create()
+    val reloadStream: PublishSubject<Unit> = PublishSubject.create()
     val errorStream: PublishSubject<String> = PublishSubject.create()
 
     private val disposables = CompositeDisposable()
@@ -133,6 +137,13 @@ class ClientViewModel(
                 }
                 .disposedBy(disposables)
 
+        agendaClient
+                .updateStream
+                .subscribe {
+                    didUpdateContact(it)
+                }
+                .disposedBy(disposables)
+
     }
 
     private fun connect() {
@@ -183,9 +194,19 @@ class ClientViewModel(
     private fun clear() {
         agendaServer = null
         contacts.clear()
-        reloadStream.onNext(true)
+        reloadStream.onNext(Unit)
         status = Status.DISCONNECTED
         error = "Dead connection"
+    }
+
+    private fun updateContact(index: Int, newContact: Contact) {
+        try {
+            val contact = contacts[index]
+            agendaServer?.update(contact.name, newContact.name, newContact.phoneNumber)
+        } catch (e: Exception) {
+            clear()
+        }
+
     }
 
 
@@ -195,12 +216,21 @@ class ClientViewModel(
 
     private fun didReceiveContact(contact: Contact) {
         contacts.add(contact)
-        reloadStream.onNext(true)
+        reloadStream.onNext(Unit)
     }
 
     private fun didRemoveContact(name: String) {
         contacts.removeIf { it.name == name }
-        reloadStream.onNext(true)
+        reloadStream.onNext(Unit)
+    }
+
+    private fun didUpdateContact(dto: UpdateContactDto) {
+        val index = contacts.indexOfFirst { it.name == dto.oldName }
+        if(index < 0) {
+            return
+        }
+        contacts[index] = dto.update.copy()
+        reloadStream.onNext(Unit)
     }
 
 
@@ -210,6 +240,8 @@ class ClientViewModel(
      * */
 
     private fun agendaId(number: Int) = "agenda$number"
+
+
 
     /**
      * Table Data Source
@@ -224,6 +256,22 @@ class ClientViewModel(
     override fun valueAt(row: Int, column: Int) = when(column) {
         0 -> contacts[row].name
         else -> contacts[row].phoneNumber
+    }
+
+
+
+    /**
+     * Table Delegate
+     * */
+
+    override fun didChangeName(index: Int, name: String) {
+        val newContact = contacts[index].copy(name = name)
+        updateContact(index, newContact)
+    }
+
+    override fun didChangePhoneNumber(index: Int, phoneNumber: String) {
+        val newContact = contacts[index].copy(phoneNumber = phoneNumber)
+        updateContact(index, newContact)
     }
 
     enum class Status(val description: String) {
