@@ -20,8 +20,6 @@ import org.omg.CosNaming.NameComponent
 import org.omg.CosNaming.NamingContext
 import org.omg.CosNaming.NamingContextHelper
 import org.omg.PortableServer.POAHelper
-import java.util.*
-import java.nio.charset.Charset
 import java.util.Random
 
 
@@ -72,9 +70,6 @@ class ClientViewModel(
 
 
     init {
-
-
-        println(clientId)
 
         contactsStream
                 .subscribe {

@@ -19,8 +19,8 @@ import org.omg.PortableServer.POAHelper
 
 class Server(id: String, ip: String, amount: Int): IdentityManagerPOA() {
 
-    private val clients = mutableListOf<br.com.ajeferson.corba.Agenda>()
-    private val servers = mutableListOf<br.com.ajeferson.corba.Agenda>()
+    private val clients = mutableListOf<Agenda>()
+    private val servers = mutableListOf<Agenda>()
 
     private lateinit var agendaClient: AgendaImpl // Interface between clients and this server
     private lateinit var agendaServer: AgendaImpl // Interface between other severs and this server

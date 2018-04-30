@@ -5,7 +5,7 @@ import javax.swing.JOptionPane
 
 fun main(args: Array<String>) {
 
-    var ip = JOptionPane.showInputDialog("Type the name server's IP:") ?: return
+    var ip = JOptionPane.showInputDialog("Type the name server's IP (leave blank for localhost):") ?: return
     if(ip.isEmpty()) {
         ip = "localhost"
     }
